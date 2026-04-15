@@ -2,8 +2,9 @@
   "name": "gemfile-upgrade",
   "displayName": "Gemfile Upgrade",
   "description": "Shows available gem updates inline in Gemfile files. Offers quick actions to update versions and open homepages/changelogs.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "fdebijl",
+  "icon": "assets/logo.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/fdebijl/gemfile-upgrade"
@@ -127,7 +128,7 @@
     "@types/vscode": "1.87.0",
     "@vscode/test-cli": "0.0.12",
     "@vscode/test-electron": "2.5.2",
-    "@vscode/vsce": "3.8.0",
+    "@vscode/vsce": "3.8.1",
     "eslint": "10.2.0",
     "eslint-plugin-no-only-tests": "3.3.0",
     "eslint-plugin-simple-import-sort": "13.0.0",
@@ -136,7 +137,7 @@
     "tsx": "4.21.0",
     "typescript": "6.0.2",
     "typescript-eslint": "8.58.2",
-    "webpack": "5.106.1",
+    "webpack": "5.106.2",
     "webpack-cli": "7.0.2"
   }
 }
