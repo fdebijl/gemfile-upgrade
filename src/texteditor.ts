@@ -155,6 +155,11 @@ const paintDecorations = (
     }
 
     if (cache.asyncstate === AsyncState.Rejected) {
+      // For gems in non-default source blocks the rubygems.org lookup will fail
+      // for private gems — skip silently rather than showing "Dependency not found"
+      if (gem.sourceUrl !== null) {
+        return
+      }
       const text = 'Dependency not found'
       const notFoundDecoration = decorateDiscreet(text)
       if (updateCache(notFoundDecoration, range.start.line, text)) {

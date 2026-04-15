@@ -22,10 +22,15 @@ export interface GemDeclaration {
   /** Column where a new constraint should be inserted (right after gem name closing quote).
    *  Relevant when constraint === null, but also useful for replacement. */
   insertPos: number
+  /** The source URL this gem belongs to, or null if the default rubygems.org source. */
+  sourceUrl: string | null
 }
 
 // Matches a gem declaration line. Groups: [1]=quote char, [2]=gem name, [3]=remainder
 const GEM_LINE_RE = /^\s*gem\s+(['"])([^'"]+)\1(.*)/
+
+// Matches a source block opener: source 'url' do
+const SOURCE_BLOCK_RE = /^\s*source\s+(['"])([^'"]+)\1\s+do\b/
 
 // A quoted string token: captures content of single or double quoted string
 const QUOTED_RE = /('([^']*)'|"([^"]*)")/g
@@ -105,12 +110,33 @@ export function getGemDeclarations(text: string): GemDeclaration[] {
   const lines = text.split('\n')
   const declarations: GemDeclaration[] = []
 
+  // Stack of block contexts: string = source URL for source blocks, null for other do...end blocks
+  const blockStack: Array<string | null> = []
+
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex]
 
     // Strip inline comments
     const commentStart = findCommentStart(line)
     const effectiveLine = commentStart >= 0 ? line.substring(0, commentStart) : line
+
+    // Detect source block opener: source 'url' do
+    const sourceMatch = SOURCE_BLOCK_RE.exec(effectiveLine)
+    if (sourceMatch) {
+      blockStack.push(sourceMatch[2])
+      continue
+    }
+
+    // Detect other do...end block openers (group, platform, if, etc.) — not gem lines
+    if (/\bdo\b/.test(effectiveLine) && !GEM_LINE_RE.test(effectiveLine)) {
+      blockStack.push(null)
+    }
+
+    // Detect block closers
+    if (/^\s*end\b/.test(effectiveLine)) {
+      if (blockStack.length > 0) blockStack.pop()
+      continue
+    }
 
     const match = GEM_LINE_RE.exec(effectiveLine)
     if (!match) {
@@ -124,6 +150,9 @@ export function getGemDeclarations(text: string): GemDeclaration[] {
     if (/\bpath\s*:|:path\s*=>/.test(remainder)) {
       continue
     }
+
+    // Determine source URL: innermost source block, or null for default rubygems.org
+    const sourceUrl = [...blockStack].reverse().find((s) => s !== null) ?? null
 
     // Position of the remainder within the effective line
     const remainderStartInLine = match[0].length - match[3].length
@@ -142,6 +171,7 @@ export function getGemDeclarations(text: string): GemDeclaration[] {
       line: lineIndex,
       lineText: line,
       insertPos,
+      sourceUrl,
     })
   }
 

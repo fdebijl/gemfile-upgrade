@@ -220,4 +220,93 @@ describe('Gemfile Parser', () => {
     const gems = getGemDeclarations("gem 'active_record'")
     assert.strictEqual(gems[0].gemName, 'active_record')
   })
+
+  // ── sourceUrl / non-default source blocks ────────────────────────────────
+
+  test('default gem has sourceUrl null', () => {
+    const gems = getGemDeclarations("gem 'rails', '~> 7.0'")
+    assert.strictEqual(gems[0].sourceUrl, null)
+  })
+
+  test('gem inside source block gets sourceUrl', () => {
+    const text = [
+      "source 'https://enterprise.contribsys.com/' do",
+      "  gem 'sidekiq-pro'",
+      "  gem 'sidekiq-ent'",
+      'end',
+    ].join('\n')
+    const gems = getGemDeclarations(text)
+    assert.strictEqual(gems.length, 2)
+    assert.strictEqual(gems[0].gemName, 'sidekiq-pro')
+    assert.strictEqual(gems[0].sourceUrl, 'https://enterprise.contribsys.com/')
+    assert.strictEqual(gems[1].gemName, 'sidekiq-ent')
+    assert.strictEqual(gems[1].sourceUrl, 'https://enterprise.contribsys.com/')
+  })
+
+  test('gems after source block end have sourceUrl null', () => {
+    const text = [
+      "source 'https://enterprise.contribsys.com/' do",
+      "  gem 'sidekiq-pro'",
+      'end',
+      "gem 'rails', '~> 7.0'",
+    ].join('\n')
+    const gems = getGemDeclarations(text)
+    assert.strictEqual(gems.length, 2)
+    assert.strictEqual(gems[0].sourceUrl, 'https://enterprise.contribsys.com/')
+    assert.strictEqual(gems[1].sourceUrl, null)
+  })
+
+  test('source block with versioned gems preserves constraint', () => {
+    const text = [
+      "source 'https://rubygems.pkg.github.com/org' do",
+      "  gem 'lms-ruby', '~> 2.15.0'",
+      'end',
+    ].join('\n')
+    const gems = getGemDeclarations(text)
+    assert.strictEqual(gems.length, 1)
+    assert.strictEqual(gems[0].gemName, 'lms-ruby')
+    assert.strictEqual(gems[0].sourceUrl, 'https://rubygems.pkg.github.com/org')
+    assert.ok(gems[0].constraint)
+    assert.strictEqual(gems[0].constraint.pessimisticVersion, '2.15.0')
+  })
+
+  test('source block mixed with group block', () => {
+    const text = [
+      "source 'https://enterprise.contribsys.com/' do",
+      "  gem 'sidekiq-pro'",
+      'end',
+      '',
+      'group :development do',
+      "  gem 'pry'",
+      'end',
+    ].join('\n')
+    const gems = getGemDeclarations(text)
+    assert.strictEqual(gems.length, 2)
+    assert.strictEqual(gems[0].sourceUrl, 'https://enterprise.contribsys.com/')
+    assert.strictEqual(gems[1].sourceUrl, null)
+  })
+
+  // ── Local path gems ───────────────────────────────────────────────────────
+
+  test('gem with path: is skipped', () => {
+    const gems = getGemDeclarations("gem 'accounts', path: 'engines/accounts'")
+    assert.strictEqual(gems.length, 0)
+  })
+
+  test('gem with :path => is skipped', () => {
+    const gems = getGemDeclarations("gem 'accounts', :path => 'engines/accounts'")
+    assert.strictEqual(gems.length, 0)
+  })
+
+  test('other gems on adjacent lines are still parsed when one has path:', () => {
+    const text = [
+      "gem 'rails', '~> 7.0'",
+      "gem 'accounts', path: 'engines/accounts'",
+      "gem 'puma', '~> 6'",
+    ].join('\n')
+    const gems = getGemDeclarations(text)
+    assert.strictEqual(gems.length, 2)
+    assert.strictEqual(gems[0].gemName, 'rails')
+    assert.strictEqual(gems[1].gemName, 'puma')
+  })
 })
