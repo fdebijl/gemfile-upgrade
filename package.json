@@ -1,0 +1,134 @@
+{
+  "name": "gemfile-upgrade",
+  "displayName": "Gemfile Upgrade",
+  "description": "Shows available gem updates inline in Gemfile files. Offers quick actions to update versions and open homepages/changelogs.",
+  "version": "0.1.0",
+  "publisher": "fdebijl",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.87.0",
+    "node": ">=24"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "ruby",
+    "gems",
+    "gemfile",
+    "bundler",
+    "upgrade",
+    "update",
+    "rubygems"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Gemfile Upgrade",
+      "properties": {
+        "gemfile-upgrade.showUpdatesAtStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Available updates will be shown directly when a Gemfile is opened. Otherwise, this must be toggled with a command."
+        },
+        "gemfile-upgrade.showOverviewRulerColor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show color indicators on the scrollbar for available updates."
+        },
+        "gemfile-upgrade.majorUpgradeColorOverwrite": {
+          "type": "string",
+          "default": "",
+          "description": "Specify a color (like #FF0000) to override the color of major upgrades. Leave empty for default color."
+        },
+        "gemfile-upgrade.minorUpgradeColorOverwrite": {
+          "type": "string",
+          "default": "",
+          "description": "Specify a color (like #FFFF00) to override the color of minor upgrades. Leave empty for default color."
+        },
+        "gemfile-upgrade.patchUpgradeColorOverwrite": {
+          "type": "string",
+          "default": "",
+          "description": "Specify a color (like #00FF00) to override the color of patch upgrades. Leave empty for default color."
+        },
+        "gemfile-upgrade.decorationString": {
+          "type": "string",
+          "default": "\t-> %s",
+          "description": "Customize update string. %s will be replaced by version, so 'Update: %s' will result in 'Update: 1.0.1'."
+        },
+        "gemfile-upgrade.ignoreGems": {
+          "type": "array",
+          "default": [],
+          "description": "A list of gem names to not show decoration for. Exact match, case-sensitive."
+        },
+        "gemfile-upgrade.msUntilRowLoading": {
+          "type": "number",
+          "default": 10000,
+          "description": "Number of milliseconds until 'Loading...' is displayed on each gem row that has not yet been loaded. 0 to disable, 1 to show immediately."
+        },
+        "gemfile-upgrade.openChangelogInEditor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open changelogs inside VS Code using the Simple Browser, rather than launching an external browser."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "gemfile-upgrade.toggle-show",
+        "title": "Gemfile Upgrade: Toggle showing available updates"
+      },
+      {
+        "command": "gemfile-upgrade.pin-all-to-latest-major",
+        "title": "Gemfile Upgrade: Pin all gems to latest major"
+      },
+      {
+        "command": "gemfile-upgrade.pin-all-to-latest-minor",
+        "title": "Gemfile Upgrade: Pin all gems to latest minor"
+      },
+      {
+        "command": "gemfile-upgrade.pin-all-to-latest-patch",
+        "title": "Gemfile Upgrade: Pin all gems to latest patch"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "webpack --mode production",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest-vscode": "npm run compile",
+    "test-vscode": "vscode-test",
+    "test-node": "node --import tsx --test src/test-node/*.test.ts",
+    "test": "npm run test-node && npm run test-vscode",
+    "format": "prettier --write \"{,!(.vscode|.vscode-test|out|node_modules)/**/}!(package-lock).{json,md,js,jsx,ts,tsx,css,scss}\"",
+    "lint": "eslint --ext .ts --ext .tsx --fix src",
+    "package": "vsce package",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "semver": "7.7.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.2",
+    "@types/semver": "7.7.1",
+    "@types/vscode": "1.115.0",
+    "@vscode/test-cli": "0.0.12",
+    "@vscode/test-electron": "2.5.2",
+    "@vscode/vsce": "3.8.0",
+    "eslint": "10.2.0",
+    "eslint-plugin-no-only-tests": "3.3.0",
+    "eslint-plugin-simple-import-sort": "13.0.0",
+    "prettier": "3.8.3",
+    "ts-loader": "9.5.7",
+    "tsx": "4.21.0",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.58.2",
+    "webpack": "5.106.1",
+    "webpack-cli": "7.0.2"
+  }
+}
