@@ -98,6 +98,10 @@
       {
         "command": "gemfile-upgrade.pin-all-to-latest-patch",
         "title": "Gemfile Upgrade: Pin all gems to latest patch"
+      },
+      {
+        "command": "gemfile-upgrade.pin-from-lockfile",
+        "title": "Gemfile Upgrade: Pin all gems to locked version (Gemfile.lock)"
       }
     ]
   },

@@ -3,6 +3,7 @@ import * as vscode from 'vscode'
 import { Config, getConfig, setConfig } from './config'
 import { initLogger } from './log'
 import { pinAllGems } from './pinAll'
+import { pinGemsFromLockfile } from './pinFromLockfile'
 import { cleanGemCache } from './rubygems'
 import { clearDecorations, handleFileDecoration } from './texteditor'
 import { UpdateAction } from './updateAction'
@@ -131,6 +132,12 @@ const activateCodeActionStuff = (context: vscode.ExtensionContext) => {
       'gemfile-upgrade.pin-all-to-latest-patch',
       makePinAllCommand('patch'),
     ),
+    vscode.commands.registerCommand('gemfile-upgrade.pin-from-lockfile', async () => {
+      const editor = vscode.window.activeTextEditor
+      if (editor !== undefined) {
+        await pinGemsFromLockfile(editor)
+      }
+    }),
   )
 }
 

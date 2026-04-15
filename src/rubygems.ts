@@ -367,6 +367,61 @@ export function getGemUpgradeInfo(
 
 // ─── Fetching ─────────────────────────────────────────────────────────────────
 
+/** Spread cold-start requests across this window to avoid a burst on first open. */
+const JITTER_MAX_MS = 1500
+
+/** How long to wait before the single retry on a non-200 response. */
+const RETRY_DELAY_MS = 5000
+
+/** Thrown when the server replies with a non-200 status — eligible for retry. */
+class HttpError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message)
+    this.name = 'HttpError'
+  }
+}
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** One attempt at fetching both API endpoints and parsing the result. */
+async function attemptFetch(gemName: string): Promise<GemCacheItem> {
+  const [gemInfoResp, versionsResp] = await Promise.all([
+    fetch(`https://rubygems.org/api/v1/gems/${encodeURIComponent(gemName)}.json`),
+    fetch(`https://rubygems.org/api/v1/versions/${encodeURIComponent(gemName)}.json`),
+  ])
+
+  if (!gemInfoResp.ok) {
+    throw new HttpError(
+      gemInfoResp.status,
+      `RubyGems API returned ${gemInfoResp.status} for ${gemName}`,
+    )
+  }
+  if (!versionsResp.ok) {
+    throw new HttpError(
+      versionsResp.status,
+      `RubyGems versions API returned ${versionsResp.status} for ${gemName}`,
+    )
+  }
+
+  const [gemInfo, allVersions] = await Promise.all([
+    gemInfoResp.json() as Promise<RubyGemsGemInfo>,
+    versionsResp.json() as Promise<RubyGemsVersionEntry[]>,
+  ])
+
+  const rubyVersions = allVersions
+    .filter((v) => v.platform === 'ruby')
+    .map((v) => v.number)
+    .sort((a, b) => compareVersions(b, a))
+
+  return {
+    date: new Date(),
+    versions: rubyVersions,
+    latestVersion: gemInfo.version,
+    homepageUri: gemInfo.homepage_uri,
+    changelogUri: gemInfo.changelog_uri,
+  }
+}
+
 const fetchGemData = (gemName: string): Promise<void> => {
   const existing = gemCache[gemName]
   if (
@@ -378,53 +433,34 @@ const fetchGemData = (gemName: string): Promise<void> => {
 
   const startTime = new Date().getTime()
 
-  const promise: Promise<void> = Promise.all([
-    fetch(`https://rubygems.org/api/v1/gems/${encodeURIComponent(gemName)}.json`),
-    fetch(`https://rubygems.org/api/v1/versions/${encodeURIComponent(gemName)}.json`),
-  ])
-    .then(async ([gemInfoResp, versionsResp]) => {
-      if (!gemInfoResp.ok) {
-        throw new Error(`RubyGems API returned ${gemInfoResp.status} for ${gemName}`)
-      }
-      if (!versionsResp.ok) {
-        throw new Error(`RubyGems versions API returned ${versionsResp.status} for ${gemName}`)
-      }
+  const promise: Promise<void> = (async () => {
+    // Spread requests across JITTER_MAX_MS to avoid a burst on first open
+    await sleep(Math.random() * JITTER_MAX_MS)
 
-      const [gemInfo, allVersions] = await Promise.all([
-        gemInfoResp.json() as Promise<RubyGemsGemInfo>,
-        versionsResp.json() as Promise<RubyGemsVersionEntry[]>,
-      ])
-
-      const rubyVersions = allVersions
-        .filter((v) => v.platform === 'ruby')
-        .map((v) => v.number)
-        .sort((a, b) => compareVersions(b, a))
-
-      gemCache[gemName] = {
-        asyncstate: AsyncState.Fulfilled,
-        startTime,
-        item: {
-          date: new Date(),
-          versions: rubyVersions,
-          latestVersion: gemInfo.version,
-          homepageUri: gemInfo.homepage_uri,
-          changelogUri: gemInfo.changelog_uri,
-        },
+    try {
+      const item = await attemptFetch(gemName)
+      gemCache[gemName] = { asyncstate: AsyncState.Fulfilled, startTime, item }
+    } catch (e) {
+      if (e instanceof HttpError) {
+        // Single delayed retry for non-200 responses (transient server errors, rate limits, etc.)
+        logError(`failed to load gem ${gemName} (${e.status}), retrying in ${RETRY_DELAY_MS}ms`, e)
+        await sleep(RETRY_DELAY_MS)
+        try {
+          const item = await attemptFetch(gemName)
+          gemCache[gemName] = { asyncstate: AsyncState.Fulfilled, startTime, item }
+        } catch (e2) {
+          logError(`failed to load gem ${gemName} after retry`, e2)
+          gemCache[gemName] = { asyncstate: AsyncState.Rejected, startTime }
+        }
+      } else {
+        // Network-level error (DNS, connection refused, etc.) — no retry
+        logError(`failed to load gem ${gemName}`, e)
+        gemCache[gemName] = { asyncstate: AsyncState.Rejected, startTime }
       }
-    })
-    .catch((e: unknown) => {
-      logError(`failed to load gem ${gemName}`, e)
-      gemCache[gemName] = {
-        asyncstate: AsyncState.Rejected,
-        startTime,
-      }
-    })
+    }
+  })()
 
-  gemCache[gemName] = {
-    asyncstate: AsyncState.InProgress,
-    startTime,
-    promise,
-  }
+  gemCache[gemName] = { asyncstate: AsyncState.InProgress, startTime, promise }
 
   return promise
 }
@@ -432,13 +468,20 @@ const fetchGemData = (gemName: string): Promise<void> => {
 /**
  * Kick off fetches for all gems in a Gemfile text that are not already cached
  * or whose cache is stale. Returns an array of in-flight promises.
+ *
+ * Gems in non-default source blocks (custom registries) are skipped — rubygems.org
+ * won't have them and would return a 404.
  */
 export function refreshGemfileData(fileText: string): Promise<void>[] {
   const cacheCutoff = new Date(new Date().getTime() - 1000 * 60 * 120) // 120 minutes
   const ignored = getConfig().ignoreGems
 
   const gems = getGemDeclarations(fileText)
-  const uniqueNames = [...new Set(gems.map((g) => g.gemName))]
+
+  // Only fetch gems from the default rubygems.org source
+  const uniqueNames = [...new Set(
+    gems.filter((g) => g.sourceUrl === null).map((g) => g.gemName)
+  )]
 
   return uniqueNames
     .filter((name) => !ignored.includes(name))

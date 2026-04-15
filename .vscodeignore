@@ -1,0 +1,10 @@
+node_modules/
+.claude/
+src/
+out/test-node/
+sample/
+
+.gitignore
+.vscode-test.mjs
+
+*.vsix
