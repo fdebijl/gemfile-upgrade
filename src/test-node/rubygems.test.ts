@@ -252,6 +252,25 @@ describe('getGemUpgradeInfo', () => {
     assert.strictEqual(info.pinToLatestPatchInRange, '~> 7.1.2')
   })
 
+  test('pessimistic-2 offers pin-to-latest-minor-in-range when minor changed', () => {
+    // gem 'rails', '~> 8.0' with 8.1.3 available → offer both ~> 8.1 and ~> 8.1.3
+    const cache = makeCacheItem(['8.1.3', '8.0.5', '8.0.0'], '8.1.3')
+    const c = makePessimisticConstraint('8.0', 'pessimistic-2')
+    const info = getGemUpgradeInfo(cache, c)
+    assert.strictEqual(info.decorationVersion, '8.1.3')
+    assert.strictEqual(info.pinToLatestMinorInRange, '~> 8.1')
+    assert.strictEqual(info.pinToLatestPatchInRange, '~> 8.1.3')
+  })
+
+  test('pessimistic-2 no pin-to-latest-minor-in-range when only patch changed', () => {
+    const cache = makeCacheItem(['8.0.5', '8.0.0'], '8.0.5')
+    const c = makePessimisticConstraint('8.0', 'pessimistic-2')
+    const info = getGemUpgradeInfo(cache, c)
+    assert.strictEqual(info.decorationVersion, '8.0.5')
+    assert.strictEqual(info.pinToLatestMinorInRange, undefined)
+    assert.strictEqual(info.pinToLatestPatchInRange, '~> 8.0.5')
+  })
+
   test('pessimistic-3 shows patch-level decoration', () => {
     const cache = makeCacheItem(['7.0.9', '7.0.5', '7.0.0', '7.1.0'], '7.1.0')
     const c = makePessimisticConstraint('7.0.3', 'pessimistic-3')
@@ -259,6 +278,27 @@ describe('getGemUpgradeInfo', () => {
     // ~> 7.0.3 allows [7.0.3, 7.1.0), so 7.0.9 is the latest within range
     assert.strictEqual(info.decorationVersion, '7.0.9')
     assert.strictEqual(info.upgradeLevel, 'patch')
+    assert.strictEqual(info.pinToLatestPatchInRange, '~> 7.0.9')
+  })
+
+  test('pessimistic-3 offers pin-to-latest-patch-in-range', () => {
+    // Mirrors: gem 'rails', '~> 8.1.2' with 8.1.3 available
+    const cache = makeCacheItem(['8.1.3', '8.1.2', '8.1.0', '8.0.0'], '8.1.3')
+    const c = makePessimisticConstraint('8.1.2', 'pessimistic-3')
+    const info = getGemUpgradeInfo(cache, c)
+    assert.strictEqual(info.decorationVersion, '8.1.3')
+    assert.strictEqual(info.pinToLatestPatchInRange, '~> 8.1.3')
+    // No bump-major or bump-minor since latest is still 8.1.x
+    assert.strictEqual(info.bumpMajor, undefined)
+    assert.strictEqual(info.bumpMinor, undefined)
+  })
+
+  test('pessimistic-3 no pin-to-latest-patch when already at latest in range', () => {
+    const cache = makeCacheItem(['7.0.3', '7.0.0'], '7.0.3')
+    const c = makePessimisticConstraint('7.0.3', 'pessimistic-3')
+    const info = getGemUpgradeInfo(cache, c)
+    assert.strictEqual(info.decorationVersion, undefined)
+    assert.strictEqual(info.pinToLatestPatchInRange, undefined)
   })
 
   test('pessimistic-3 offers bump-minor', () => {

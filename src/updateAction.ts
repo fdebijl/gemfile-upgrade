@@ -39,12 +39,12 @@ export class UpdateAction implements vscode.CodeActionProvider {
     // Version upgrade actions
     if (upgradeInfo.bumpMajor !== undefined) {
       actions.push(
-        this.createPinAction(document, gem, `Bump major to ${upgradeInfo.bumpMajor}`, upgradeInfo.bumpMajor),
+        this.createPinAction(document, gem, `Do major upgrade to ${upgradeInfo.bumpMajor}`, upgradeInfo.bumpMajor),
       )
     }
     if (upgradeInfo.bumpMinor !== undefined) {
       actions.push(
-        this.createPinAction(document, gem, `Bump minor to ${upgradeInfo.bumpMinor}`, upgradeInfo.bumpMinor),
+        this.createPinAction(document, gem, `Do minor upgrade to ${upgradeInfo.bumpMinor}`, upgradeInfo.bumpMinor),
       )
     }
     if (upgradeInfo.pinToLatestMinorInRange !== undefined) {
@@ -52,7 +52,7 @@ export class UpdateAction implements vscode.CodeActionProvider {
         this.createPinAction(
           document,
           gem,
-          `Pin to latest minor (${upgradeInfo.pinToLatestMinorInRange})`,
+          `Do minor upgrade to ${upgradeInfo.pinToLatestMinorInRange}`,
           upgradeInfo.pinToLatestMinorInRange,
         ),
       )
@@ -62,7 +62,7 @@ export class UpdateAction implements vscode.CodeActionProvider {
         this.createPinAction(
           document,
           gem,
-          `Pin to latest patch (${upgradeInfo.pinToLatestPatchInRange})`,
+          `Do patch upgrade to ${upgradeInfo.pinToLatestPatchInRange}`,
           upgradeInfo.pinToLatestPatchInRange,
         ),
       )
@@ -72,7 +72,7 @@ export class UpdateAction implements vscode.CodeActionProvider {
         this.createPinAction(
           document,
           gem,
-          `Pin to latest major (${upgradeInfo.pinToLatestMajor})`,
+          `Do major upgrade to ${upgradeInfo.pinToLatestMajor}`,
           upgradeInfo.pinToLatestMajor,
         ),
       )
@@ -82,7 +82,7 @@ export class UpdateAction implements vscode.CodeActionProvider {
         this.createPinAction(
           document,
           gem,
-          `Pin to latest minor (${upgradeInfo.pinToLatestMinor})`,
+          `Do minor upgrade to ${upgradeInfo.pinToLatestMinor}`,
           upgradeInfo.pinToLatestMinor,
         ),
       )
@@ -92,7 +92,7 @@ export class UpdateAction implements vscode.CodeActionProvider {
         this.createPinAction(
           document,
           gem,
-          `Pin to latest patch (${upgradeInfo.pinToLatestPatch})`,
+          `Do patch upgrade to ${upgradeInfo.pinToLatestPatch}`,
           upgradeInfo.pinToLatestPatch,
         ),
       )
@@ -154,11 +154,11 @@ export class UpdateAction implements vscode.CodeActionProvider {
 // Re-export for use in texteditor.ts (avoids circular imports by going through extension.ts)
 export function buildUpgradeActions(upgradeInfo: GemUpgradeInfo): string[] {
   const descriptions: string[] = []
-  if (upgradeInfo.bumpMajor !== undefined) descriptions.push(`Bump major to ${upgradeInfo.bumpMajor}`)
-  if (upgradeInfo.bumpMinor !== undefined) descriptions.push(`Bump minor to ${upgradeInfo.bumpMinor}`)
+  if (upgradeInfo.bumpMajor !== undefined) descriptions.push(`Do major upgrade to ${upgradeInfo.bumpMajor}`)
+  if (upgradeInfo.bumpMinor !== undefined) descriptions.push(`Do minor upgrade to ${upgradeInfo.bumpMinor}`)
   if (upgradeInfo.pinToLatestMinorInRange !== undefined)
-    descriptions.push(`Pin to latest minor (${upgradeInfo.pinToLatestMinorInRange})`)
+    descriptions.push(`Do minor upgrade to ${upgradeInfo.pinToLatestMinorInRange}`)
   if (upgradeInfo.pinToLatestPatchInRange !== undefined)
-    descriptions.push(`Pin to latest patch (${upgradeInfo.pinToLatestPatchInRange})`)
+    descriptions.push(`Do patch upgrade to ${upgradeInfo.pinToLatestPatchInRange}`)
   return descriptions
 }

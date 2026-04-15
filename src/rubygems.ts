@@ -336,18 +336,22 @@ export function getGemUpgradeInfo(
       }
     }
   } else if (pessSegCount === 2) {
-    // ~> A.B: offer "Bump major" (if newer major) and "Pin to latest patch"
+    // ~> A.B: offer "Bump major" (if newer major), "Pin to latest minor", and "Pin to latest patch"
     if (latestMajorNum > currentMajorNum && latestMajorNum !== 0) {
       info.bumpMajor = makeMajorPin(latestVersion)
     }
     if (latestInRange !== undefined) {
+      const minorPin = makeMinorPin(latestInRange)
+      if (minorPin !== `~> ${pessVersion}`) {
+        info.pinToLatestMinorInRange = minorPin
+      }
       const patchPin = makePatchPin(latestInRange)
       if (patchPin !== `~> ${pessVersion}.0` && patchPin !== `~> ${pessVersion}`) {
         info.pinToLatestPatchInRange = patchPin
       }
     }
   } else {
-    // ~> A.B.C (3+ segments): offer "Bump major" and "Bump minor"
+    // ~> A.B.C (3+ segments): offer "Bump major", "Bump minor", and "Pin to latest patch in range"
     if (latestMajorNum > currentMajorNum && latestMajorNum !== 0) {
       info.bumpMajor = makeMajorPin(latestVersion)
     }
@@ -359,6 +363,10 @@ export function getGemUpgradeInfo(
       if (minorPin !== `~> ${pessSegs[0]}.${pessSegs[1]}`) {
         info.bumpMinor = minorPin
       }
+    }
+    // Use decorationVersion directly so all segments (including 4-part versions) are preserved
+    if (info.decorationVersion !== undefined) {
+      info.pinToLatestPatchInRange = `~> ${info.decorationVersion}`
     }
   }
 
