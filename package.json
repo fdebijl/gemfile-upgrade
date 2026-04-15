@@ -4,6 +4,10 @@
   "description": "Shows available gem updates inline in Gemfile files. Offers quick actions to update versions and open homepages/changelogs.",
   "version": "0.1.0",
   "publisher": "fdebijl",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fdebijl/gemfile-upgrade"
+  },
   "license": "MIT",
   "engines": {
     "vscode": "^1.87.0",
@@ -116,7 +120,7 @@
   "devDependencies": {
     "@types/node": "24.12.2",
     "@types/semver": "7.7.1",
-    "@types/vscode": "1.115.0",
+    "@types/vscode": "1.87.0",
     "@vscode/test-cli": "0.0.12",
     "@vscode/test-electron": "2.5.2",
     "@vscode/vsce": "3.8.0",

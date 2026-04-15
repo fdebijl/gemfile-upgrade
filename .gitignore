@@ -12,3 +12,4 @@ coverage/
 *.bak
 .claude/
 out/
+*.vsix
