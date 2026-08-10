@@ -127,7 +127,7 @@
     "@types/semver": "7.7.1",
     "@types/vscode": "1.87.0",
     "@vscode/test-cli": "0.0.12",
-    "@vscode/test-electron": "2.5.2",
+    "@vscode/test-electron": "3.0.0",
     "@vscode/vsce": "3.8.1",
     "eslint": "10.2.0",
     "eslint-plugin-no-only-tests": "3.3.0",
